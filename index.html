@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 商業工具包</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+body{font-family:-apple-system,"Microsoft JhengHei",sans-serif;margin:0;padding:20px;line-height:1.6;font-size:15px}
+.h{font-size:21px;font-weight:700;margin-bottom:4px}
+.sub{color:#666;margin-bottom:18px;font-size:14px}
+.card{border:2px solid #06c755;border-radius:12px;padding:14px}
+.step{margin:4px 0;font-size:14px}
+.ok{color:#06c755}
+.err{color:#c0392b;font-weight:700;word-break:break-all}
+</style>
+</head>
+<body>
+
+<div class="h">AI 商業工具包</div>
+<div class="sub">製造業／人資／業務，三包任選一包。</div>
+<div class="card"><div id="步驟"></div></div>
+
+<script>
+const LIFF_ID = "2011388150-mVH54YNv";
+const 後端網址 = "https://script.google.com/macros/s/AKfycbwaNxUdla8IHMnHEfKbU2SH2eiS8Aj7MxI7Jt5zfh5dvAHZxQVStByNAVNvZAdrTynwtA/exec";
+
+var 區 = document.getElementById("步驟");
+function 記(訊息, 樣式) {
+  var d = document.createElement("div");
+  d.className = "step " + (樣式 || "");
+  d.textContent = 訊息;
+  區.appendChild(d);
+}
+window.onerror = function (m, u, l) { 記("JS 錯誤：" + m + "（行 " + l + "）", "err"); return true; };
+
+/* 來源可能直接帶 ?s=yt，也可能被 LIFF 包進 liff.state，兩種都要讀 */
+function 取出來源() {
+  var q = new URLSearchParams(location.search);
+  if (q.get("s")) return q.get("s");
+  var st = q.get("liff.state");
+  if (st) {
+    var m = decodeURIComponent(st).match(/[?&]s=([^&]+)/);
+    if (m) return m[1];
+  }
+  return "";
+}
+
+var 來源 = 取出來源();
+記("① 頁面載入 OK，來源＝" + (來源 || "無"), "ok");
+
+if (typeof liff === "undefined") {
+  記("② LIFF SDK 沒有載入", "err");
+} else {
+  記("② LIFF SDK 已載入", "ok");
+  liff.init({ liffId: LIFF_ID }).then(function () {
+    記("③ liff.init 成功", "ok");
+    if (!liff.isLoggedIn()) { 記("④ 尚未登入，轉去登入…"); liff.login(); return null; }
+    記("④ 已登入", "ok");
+    return liff.getProfile();
+  }).then(function (p) {
+    if (!p) return;
+    記("⑤ 使用者 ID：" + p.userId.substring(0, 10) + "…", "ok");
+    /* 用 text/plain 送，才不會觸發跨網域的預檢請求被擋 */
+    return fetch(後端網址, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ 來自: "落地頁", 使用者ID: p.userId, 來源: 來源 })
+    });
+  }).then(function (r) {
+    if (r !== undefined) 記("⑥ 已送出紀錄 ✓（請到事件表確認）", "ok");
+  }).catch(function (err) {
+    記("✗ 失敗：" + err, "err");
+  });
+}
+</script>
+</body>
+</html>
