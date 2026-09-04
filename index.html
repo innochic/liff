@@ -1,40 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI 商業工具包</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ai商業·多巴胺研究室</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
-body{font-family:-apple-system,"Microsoft JhengHei",sans-serif;margin:0;padding:20px;line-height:1.6;font-size:15px}
-.h{font-size:21px;font-weight:700;margin-bottom:4px}
-.sub{color:#666;margin-bottom:18px;font-size:14px}
-.card{border:2px solid #06c755;border-radius:12px;padding:14px}
-.step{margin:4px 0;font-size:14px}
-.ok{color:#06c755}
-.err{color:#c0392b;font-weight:700;word-break:break-all}
+  /* ------------------------------------------------------------------
+     獲客中繼頁 —— 使用者不該停在這裡。
+     任務只有兩件：記下來源、立刻關掉自己回到 LINE。
+     2026-09-04 緊急修復：舊版是診斷頁，學生掃完卡在畫面上進不了 OA。
+     ------------------------------------------------------------------ */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#000; color:#fff; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    padding:32px 24px; text-align:center;
+  }
+  .dot {
+    width:44px; height:44px; border-radius:50%;
+    border:3px solid rgba(181,255,88,.25); border-top-color:#B5FF58;
+    animation:spin .9s linear infinite; margin-bottom:20px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  h1 { font-size:19px; font-weight:900; margin-bottom:8px; }
+  p  { font-size:14.5px; color:#9AA0A6; line-height:1.7; }
+  a.btn {
+    display:none; margin-top:22px; background:#B5FF58; color:#000;
+    text-decoration:none; font-weight:900; font-size:16px;
+    padding:14px 28px; border-radius:12px;
+  }
 </style>
 </head>
 <body>
 
-<div class="h">AI 商業工具包</div>
-<div class="sub">製造業／人資／業務，三包任選一包。</div>
-<div class="card"><div id="步驟"></div></div>
+<div class="dot" id="spin"></div>
+<h1 id="msg">正在帶你進入研究室…</h1>
+<p id="sub">請稍候，不用做任何動作</p>
+<a class="btn" id="fallback" href="https://line.me/R/ti/p/@810nuidc">點這裡進入聊天室</a>
 
 <script>
-const LIFF_ID = "2011388150-mVH54YNv";
-const 後端網址 = "https://expert-funnel.vercel.app/api/line/liff";
+var LIFF_ID = "2011388150-mVH54YNv";
+var 後端網址 = "https://expert-funnel.vercel.app/api/line/liff";
 
-var 區 = document.getElementById("步驟");
-function 記(訊息, 樣式) {
-  var d = document.createElement("div");
-  d.className = "step " + (樣式 || "");
-  d.textContent = 訊息;
-  區.appendChild(d);
-}
-window.onerror = function (m, u, l) { 記("JS 錯誤：" + m + "（行 " + l + "）", "err"); return true; };
-
-/* 來源可能直接帶 ?s=yt，也可能被 LIFF 包進 liff.state，兩種都要讀 */
+/** 來源代號：?s=yt 直接帶，或從 LINE 導回時藏在 liff.state 裡 */
 function 取出來源() {
   var q = new URLSearchParams(location.search);
   if (q.get("s")) return q.get("s");
@@ -46,34 +56,58 @@ function 取出來源() {
   return "";
 }
 
-var 來源 = 取出來源();
-記("① 頁面載入 OK，來源＝" + (來源 || "無"), "ok");
-
-if (typeof liff === "undefined") {
-  記("② LIFF SDK 沒有載入", "err");
-} else {
-  記("② LIFF SDK 已載入", "ok");
-  liff.init({ liffId: LIFF_ID }).then(function () {
-    記("③ liff.init 成功", "ok");
-    if (!liff.isLoggedIn()) { 記("④ 尚未登入，轉去登入…"); liff.login(); return null; }
-    記("④ 已登入", "ok");
-    return liff.getProfile();
-  }).then(function (p) {
-    if (!p) return;
-    記("⑤ 使用者 ID：" + p.userId.substring(0, 10) + "…", "ok");
-    /* 用 text/plain 送，才不會觸發跨網域的預檢請求被擋 */
-    return fetch(後端網址, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ 來自: "落地頁", 使用者ID: p.userId, 來源: 來源 })
-    });
-  }).then(function (r) {
-    if (r !== undefined) 記("⑥ 已送出紀錄 ✓（請到事件表確認）", "ok");
-  }).catch(function (err) {
-    記("✗ 失敗：" + err, "err");
-  });
+/** 顯示保底出口：關不掉視窗時，至少給一個能點的按鈕，不要讓人卡死 */
+function 顯示保底() {
+  document.getElementById("spin").style.display = "none";
+  document.getElementById("msg").textContent = "已經完成登記";
+  document.getElementById("sub").textContent = "點下面的按鈕回到聊天室";
+  document.getElementById("fallback").style.display = "inline-block";
 }
+
+/** 關掉自己。關不掉就顯示保底出口。 */
+function 收工() {
+  try {
+    if (window.liff && liff.isInClient && liff.isInClient()) {
+      liff.closeWindow();
+      // closeWindow 偶爾不生效（外部瀏覽器、舊版 LINE），2 秒後仍在就給出口
+      setTimeout(顯示保底, 2000);
+      return;
+    }
+  } catch (e) { /* 忽略，走保底 */ }
+  顯示保底();
+}
+
+liff.init({ liffId: LIFF_ID })
+  .then(function () {
+    if (!liff.isLoggedIn()) { liff.login(); return; }   // 導去登入，回來會再跑一次
+    return liff.getProfile().then(function (p) {
+      // 🚨 不要 await 這個 fetch。網路慢的時候會把使用者卡在這頁。
+      // 送不送得出去都不影響他進 LINE，體驗優先。
+      try {
+        fetch(後端網址, {
+          method: "POST",
+          mode: "no-cors",
+          keepalive: true,                    // 視窗關掉後請求仍會送出
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            來自: "落地頁",
+            使用者ID: p.userId,
+            來源: 取出來源()
+          })
+        });
+      } catch (e) { /* 記錄失敗不擋人 */ }
+      收工();
+    });
+  })
+  .catch(function () {
+    // init 失敗（網路、設定、外部瀏覽器）也不能讓人卡住
+    顯示保底();
+  });
+
+// 最後一道保險：不管上面發生什麼事，5 秒後一定要給出口
+setTimeout(function () {
+  if (document.getElementById("fallback").style.display !== "inline-block") 顯示保底();
+}, 5000);
 </script>
 </body>
 </html>
