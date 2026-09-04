@@ -43,6 +43,7 @@
 <script>
 var LIFF_ID = "2011388150-mVH54YNv";
 var 後端網址 = "https://expert-funnel.vercel.app/api/line/liff";
+var OA_連結  = "https://line.me/R/ti/p/@810nuidc";   // 多巴胺 OA 聊天室
 
 /** 來源代號：?s=yt 直接帶，或從 LINE 導回時藏在 liff.state 裡 */
 function 取出來源() {
@@ -64,15 +65,15 @@ function 顯示保底() {
   document.getElementById("fallback").style.display = "inline-block";
 }
 
-/** 關掉自己。關不掉就顯示保底出口。 */
+/** 送使用者進 OA 聊天室。
+ *  2026-09-04 修正：原本用 liff.closeWindow()，但關掉只是回到「他掃碼之前的地方」，
+ *  不會進聊天室。獲客路徑要的是「人落在 OA 對話裡看到歡迎訊息」，所以改成直接導向。 */
 function 收工() {
   try {
-    if (window.liff && liff.isInClient && liff.isInClient()) {
-      liff.closeWindow();
-      // closeWindow 偶爾不生效（外部瀏覽器、舊版 LINE），2 秒後仍在就給出口
-      setTimeout(顯示保底, 2000);
-      return;
-    }
+    location.replace(OA_連結);
+    // 導不過去（極少數舊版 LINE）時，2 秒後給可點的出口
+    setTimeout(顯示保底, 2000);
+    return;
   } catch (e) { /* 忽略，走保底 */ }
   顯示保底();
 }
